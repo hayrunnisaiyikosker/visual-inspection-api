@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visual Inspection API</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --success: #10b981;
+    --error: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-pill {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--success);
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .status-pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  main {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .hero-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 50%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,58,237,0.05);
+  }
+
+  .upload-zone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(124,58,237,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .upload-zone h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-zone p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  #fileInput { display: none; }
+
+  /* API URL Input */
+  .api-config {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+  }
+
+  .api-config label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .api-config input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-config input:focus { border-color: var(--accent); }
+
+  /* Analyze Button */
+  .btn-analyze {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-analyze:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(124,58,237,0.4);
+  }
+
+  .btn-analyze:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-analyze.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    to { left: 100%; }
+  }
+
+  /* Preview */
+  .preview-container {
+    display: none;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .preview-container img {
+    max-height: 200px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* Results Grid */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+  }
+
+  .results-grid.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .result-card:hover { border-color: var(--accent); }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .card-classify::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .card-describe::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .card-detect::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .card-bgremove::before { background: linear-gradient(90deg, var(--success), transparent); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+  }
+
+  .card-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(124,58,237,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+
+  .card-badge.cyan { background: rgba(6,182,212,0.15); color: var(--accent2); border-color: rgba(6,182,212,0.3); }
+  .card-badge.amber { background: rgba(245,158,11,0.15); color: var(--accent3); border-color: rgba(245,158,11,0.3); }
+  .card-badge.green { background: rgba(16,185,129,0.15); color: var(--success); border-color: rgba(16,185,129,0.3); }
+
+  /* Classification */
+  .top-prediction {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    line-height: 1.1;
+  }
+
+  .confidence-bar-wrap {
+    margin-bottom: 0.8rem;
+  }
+
+  .confidence-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .confidence-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.8s ease;
+    width: 0;
+  }
+
+  /* Description */
+  .description-text {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.8rem;
+    color: var(--accent2);
+  }
+
+  .raw-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    border-left: 2px solid var(--accent2);
+  }
+
+  /* Detection */
+  .detection-canvas-wrap {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .detection-img {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+  }
+
+  #detectionCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+  }
+
+  .objects-list {
+    margin-top: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .object-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(245,158,11,0.15);
+    color: var(--accent3);
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+
+  /* Background Removal */
+  .bg-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+
+  .bg-compare-item {
+    text-align: center;
+  }
+
+  .bg-compare-item img {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .bg-compare-item.removed img {
+    background: repeating-conic-gradient(#1a1a2e 0% 25%, #12121a 0% 50%) 0 0 / 12px 12px;
+  }
+
+  .compare-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+    display: block;
+  }
+
+  /* Processing Times */
+  .times-row {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .time-chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    background: rgba(0,0,0,0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .time-chip span { color: var(--text); }
+
+  /* Full width card */
+  .card-full { grid-column: 1 / -1; }
+
+  /* Error */
+  .error-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--error);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    margin-bottom: 2rem;
+    display: none;
+  }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .results-grid { grid-template-columns: 1fr; }
+    .card-full { grid-column: 1; }
+    header { padding: 1.5rem; }
+    main { padding: 2rem 1rem; }
+    .hero h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Visual<span>.</span>Inspect</div>
+  <div class="status-pill">API ONLINE</div>
+</header>
+
+<main>
+  <div class="hero">
+    <span class="hero-tag">AI-Powered Visual Inspection</span>
+    <h1>See Beyond<br>the Image</h1>
+    <p>Classify, describe, detect objects and remove backgrounds — all in one API call.</p>
+  </div>
+
+  <div class="api-config">
+    <label>API_URL</label>
+    <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+  </div>
+
+  <div class="upload-zone" id="uploadZone">
+    <span class="upload-icon">⬆</span>
+    <h3>Drop your image here</h3>
+    <p>JPEG · PNG · WebP · max 5MB</p>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+  </div>
+
+  <div class="preview-container" id="previewContainer">
+    <img id="previewImg" src="" alt="Preview">
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <button class="btn-analyze" id="analyzeBtn" disabled>
+    Analyze Image
+  </button>
+
+  <div class="results-grid" id="resultsGrid">
+
+    <!-- Classification -->
+    <div class="result-card card-classify">
+      <div class="card-header">
+        <span class="card-title">Classification</span>
+        <span class="card-badge" id="classifyTime">—</span>
+      </div>
+      <div class="top-prediction" id="topPrediction">—</div>
+      <div id="top3List"></div>
+      <div class="times-row">
+        <div class="time-chip">model <span>ViT-Base</span></div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="result-card card-describe">
+      <div class="card-header">
+        <span class="card-title">Description</span>
+        <span class="card-badge cyan" id="describeTime">—</span>
+      </div>
+      <div class="description-text" id="descriptionCleaned">—</div>
+      <div class="raw-text" id="descriptionRaw">raw output will appear here</div>
+      <div class="times-row">
+        <div class="time-chip">model <span>BLIP-Base</span></div>
+      </div>
+    </div>
+
+    <!-- Detection -->
+    <div class="result-card card-detect">
+      <div class="card-header">
+        <span class="card-title">Object Detection</span>
+        <span class="card-badge amber" id="detectTime">—</span>
+      </div>
+      <div class="detection-canvas-wrap" id="detectionWrap">
+        <img class="detection-img" id="detectionImg" src="" alt="">
+        <canvas id="detectionCanvas"></canvas>
+      </div>
+      <div class="objects-list" id="objectsList"></div>
+      <div class="times-row">
+        <div class="time-chip">model <span>DETR-ResNet50</span></div>
+      </div>
+    </div>
+
+    <!-- Background Removal -->
+    <div class="result-card card-bgremove">
+      <div class="card-header">
+        <span class="card-title">Background Removal</span>
+        <span class="card-badge green" id="bgTime">—</span>
+      </div>
+      <div class="bg-compare">
+        <div class="bg-compare-item">
+          <img id="bgOriginal" src="" alt="Original">
+          <span class="compare-label">ORIGINAL</span>
+        </div>
+        <div class="bg-compare-item removed">
+          <img id="bgRemoved" src="" alt="Removed">
+          <span class="compare-label">BG REMOVED</span>
+        </div>
+      </div>
+      <div class="times-row">
+        <div class="time-chip">model <span>RMBG-1.4</span></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewContainer = document.getElementById('previewContainer');
+  const previewImg = document.getElementById('previewImg');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const resultsGrid = document.getElementById('resultsGrid');
+  const errorMsg = document.getElementById('errorMsg');
+
+  let selectedFile = null;
+
+  // Upload zone click
+  uploadZone.addEventListener('click', () => fileInput.click());
+
+  // Drag & Drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      showError('Only JPEG, PNG, WebP supported.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError('File too large. Max 5MB.');
+      return;
+    }
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    analyzeBtn.disabled = false;
+    hideError();
+    resultsGrid.classList.remove('visible');
+  }
+
+  analyzeBtn.addEventListener('click', analyze);
+
+  async function analyze() {
+    if (!selectedFile) return;
+
+    const apiUrl = document.getElementById('apiUrl').value.trim();
+    analyzeBtn.disabled = true;
+    analyzeBtn.classList.add('loading');
+    analyzeBtn.innerHTML = '<span class="spinner"></span>Analyzing...';
+    hideError();
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch(`${apiUrl}/analyze/`, { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`${res.status}: ${err}`);
+      }
+      const data = await res.json();
+      renderResults(data);
+    } catch (err) {
+      showError(`Error: ${err.message}`);
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeBtn.classList.remove('loading');
+      analyzeBtn.innerHTML = 'Analyze Image';
+    }
+  }
+
+  function renderResults(data) {
+    const t = data.processing_time_ms;
+
+    // Classification
+    document.getElementById('classifyTime').textContent = `${t.classification_ms}ms`;
+    document.getElementById('topPrediction').textContent = data.classification.top_prediction;
+    const top3 = data.classification.top_3;
+    const top3Html = top3.map(p => `
+      <div class="confidence-bar-wrap">
+        <div class="confidence-label">
+          <span>${p.label}</span>
+          <span>${(p.confidence * 100).toFixed(1)}%</span>
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" data-width="${p.confidence * 100}"></div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('top3List').innerHTML = top3Html;
+
+    // Description
+    document.getElementById('describeTime').textContent = `${t.description_ms}ms`;
+    document.getElementById('descriptionCleaned').textContent = data.description.cleaned;
+    document.getElementById('descriptionRaw').textContent = `raw: "${data.description.raw}"`;
+
+    // Detection — draw bboxes on canvas
+    document.getElementById('detectTime').textContent = `${t.detection_ms}ms`;
+    const detImg = document.getElementById('detectionImg');
+    detImg.src = previewImg.src;
+    detImg.onload = () => {
+      const canvas = document.getElementById('detectionCanvas');
+      const wrap = document.getElementById('detectionWrap');
+      canvas.width = detImg.naturalWidth;
+      canvas.height = detImg.naturalHeight;
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const colors = ['#f59e0b', '#7c3aed', '#06b6d4', '#10b981', '#ef4444'];
+      data.detection.detected_objects.forEach((obj, i) => {
+        const c = colors[i % colors.length];
+        const b = obj.bbox;
+        const x = b.x_min * canvas.width;
+        const y = b.y_min * canvas.height;
+        const w = (b.x_max - b.x_min) * canvas.width;
+        const h = (b.y_max - b.y_min) * canvas.height;
+        ctx.strokeStyle = c;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = c;
+        ctx.fillRect(x, y - 22, w < 120 ? 120 : w, 22);
+        ctx.fillStyle = '#0a0a0f';
+        ctx.font = 'bold 12px Space Mono, monospace';
+        ctx.fillText(`${obj.label} ${(obj.confidence * 100).toFixed(0)}%`, x + 4, y - 6);
+      });
+    };
+    const objListHtml = data.detection.detected_objects.map(o =>
+      `<span class="object-tag">${o.label} ${(o.confidence * 100).toFixed(0)}%</span>`
+    ).join('');
+    document.getElementById('objectsList').innerHTML = objListHtml || '<span class="object-tag">no objects</span>';
+
+    // Background Removal
+    document.getElementById('bgTime').textContent = `${t.background_removal_ms}ms`;
+    document.getElementById('bgOriginal').src = previewImg.src;
+    document.getElementById('bgRemoved').src = data.background_removed;
+
+    // Show grid
+    resultsGrid.classList.add('visible');
+
+    // Animate confidence bars
+    setTimeout(() => {
+      document.querySelectorAll('.confidence-fill').forEach(el => {
+        el.style.width = el.dataset.width + '%';
+      });
+    }, 100);
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.style.display = 'block';
+  }
+
+  function hideError() {
+    errorMsg.style.display = 'none';
+  }
+</script>
+
+</body>
+</html>

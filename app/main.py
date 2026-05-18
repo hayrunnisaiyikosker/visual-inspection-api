@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import classify, describe, detect, remove_bg, analyze
-
+from app.models.database import create_tables
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -29,7 +29,8 @@ app.include_router(analyze.router, prefix="/analyze", tags=["Unified"])
 
 @app.on_event("startup")
 async def startup_event():
-    """Load all models at startup so first request is not slow."""
+    print("[Startup] Creating database tables...")
+    await create_tables()
     print("[Startup] Pre-loading all models...")
     from app.services.classifier import load_model as load_classifier
     from app.services.descriptor import load_model as load_descriptor
@@ -55,3 +56,16 @@ async def root():
 @app.get("/health", tags=["Health"])
 async def health():
     return {"status": "ok"}
+
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+static_dir = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/ui", tags=["Frontend"])
+async def frontend():
+    return FileResponse(os.path.join(static_dir, "index.html"))

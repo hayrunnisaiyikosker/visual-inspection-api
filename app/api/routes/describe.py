@@ -10,4 +10,5 @@ router = APIRouter()
 async def describe(file: UploadFile = File(...)):
     image_bytes = await validate_image(file)
     image = bytes_to_pil(image_bytes)
-    return describe_image(image)
+    result, _ = describe_image(image)
+    return result

@@ -10,4 +10,5 @@ router = APIRouter()
 async def remove_bg(file: UploadFile = File(...)):
     image_bytes = await validate_image(file)
     image = bytes_to_pil(image_bytes)
-    return remove_background(image)
+    result, _ = remove_background(image)
+    return result
