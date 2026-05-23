@@ -536,6 +536,10 @@
     <label>API_URL</label>
     <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
   </div>
+  <div class="api-config">
+    <label>API_KEY</label>
+    <input type="text" id="apiKey" placeholder="vi-your-api-key-here">
+  </div>
 
   <div class="upload-zone" id="uploadZone">
     <span class="upload-icon">⬆</span>
@@ -680,6 +684,7 @@
     if (!selectedFile) return;
 
     const apiUrl = document.getElementById('apiUrl').value.trim();
+    const apiKey = document.getElementById('apiKey').value.trim();
     analyzeBtn.disabled = true;
     analyzeBtn.classList.add('loading');
     analyzeBtn.innerHTML = '<span class="spinner"></span>Analyzing...';
@@ -689,7 +694,7 @@
     formData.append('file', selectedFile);
 
     try {
-      const res = await fetch(`${apiUrl}/analyze/`, { method: 'POST', body: formData });
+      const headers = {}; if (apiKey) headers['X-API-Key'] = apiKey; const res = await fetch(`${apiUrl}/analyze/`, { method: 'POST', body: formData, headers: headers });
       if (!res.ok) {
         const err = await res.text();
         throw new Error(`${res.status}: ${err}`);

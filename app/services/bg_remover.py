@@ -1,7 +1,8 @@
 from transformers import AutoModelForImageSegmentation
-from PIL import Image
+from PIL import Image, ImageFilter
 import torch
 import torchvision.transforms as T
+import numpy as np
 import io
 import base64
 import time
@@ -54,8 +55,18 @@ def remove_background(image: Image.Image) -> tuple[BackgroundRemovalResponse, fl
         mask = mask[0]
 
     mask = torch.sigmoid(mask)
+
+    # Threshold ile keskin maske
     mask = (mask - mask.min()) / (mask.max() - mask.min() + 1e-8)
-    mask_pil = T.ToPILImage()(mask.float()).resize(original_size, Image.LANCZOS)
+    mask = torch.where(mask > 0.5, mask * 1.5, mask * 0.2)
+    mask = torch.clamp(mask, 0, 1)
+
+    mask_np = (mask.numpy() * 255).astype(np.uint8)
+    mask_pil = Image.fromarray(mask_np, mode="L")
+    mask_pil = mask_pil.resize(original_size, Image.LANCZOS)
+
+    # Kenarları hafif yumuşat
+    mask_pil = mask_pil.filter(ImageFilter.GaussianBlur(radius=1))
 
     result = image.convert("RGBA")
     result.putalpha(mask_pil)
