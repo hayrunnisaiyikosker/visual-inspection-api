@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git
+mlruns/
+mlflow.db
+test_image.jpg
+*.jpg
+*.jpeg
+*.png
+*.webp
