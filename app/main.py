@@ -33,16 +33,7 @@ app.include_router(analyze.router, prefix="/analyze", tags=["Unified"])
 async def startup_event():
     print("[Startup] Creating database tables...")
     await create_tables()
-    print("[Startup] Pre-loading all models...")
-    from app.services.classifier import load_model as load_classifier
-    from app.services.descriptor import load_model as load_descriptor
-    from app.services.detector import load_model as load_detector
-    from app.services.bg_remover import load_model as load_bg_remover
-    load_classifier()
-    load_descriptor()
-    load_detector()
-    load_bg_remover()
-    print("[Startup] All models loaded and ready.")
+    print("[Startup] Models will load on first request (lazy loading).")
 
 
 @app.get("/", tags=["Health"])
