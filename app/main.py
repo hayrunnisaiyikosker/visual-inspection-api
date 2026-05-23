@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import classify, describe, detect, remove_bg, analyze
+from app.api.routes.auth import router as auth_router
 from app.models.database import create_tables
 
 app = FastAPI(
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(classify.router, prefix="/analyze", tags=["Analysis"])
 app.include_router(describe.router, prefix="/analyze", tags=["Analysis"])
 app.include_router(detect.router, prefix="/analyze", tags=["Analysis"])
