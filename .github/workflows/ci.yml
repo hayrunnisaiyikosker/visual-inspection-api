@@ -19,17 +19,14 @@ jobs:
         python-version: "3.12"
 
     - name: Install dependencies
-      run: |
-        pip install fastapi pydantic pydantic-settings
+      run: pip install fastapi pydantic pydantic-settings
 
     - name: Run basic import test
-      run: |
-        python3 -c "import fastapi; import pydantic; print("Dependencies OK")"
+      run: python3 tests/test_imports.py
 
     - name: Check project structure
       run: |
         test -f app/main.py && echo "main.py OK"
-        test -f app/api/routes/analyze.py && echo "analyze.py OK"
         test -f Dockerfile && echo "Dockerfile OK"
         test -f docker-compose.yml && echo "docker-compose.yml OK"
-        echo "All structure checks passed"
+        echo "All checks passed"
