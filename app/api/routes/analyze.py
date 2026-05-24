@@ -37,17 +37,10 @@ async def analyze(
     loop = asyncio.get_event_loop()
     total_start = time.time()
 
-    results = await asyncio.gather(
-        loop.run_in_executor(None, classify_image, image),
-        loop.run_in_executor(None, describe_image, image),
-        loop.run_in_executor(None, detect_objects, image),
-        loop.run_in_executor(None, remove_background, image),
-    )
-
-    classification_result, classify_ms = results[0]
-    description_result, describe_ms = results[1]
-    detection_result, detect_ms = results[2]
-    bg_result, bg_ms = results[3]
+    classification_result, classify_ms = await loop.run_in_executor(None, classify_image, image)
+    description_result, describe_ms = await loop.run_in_executor(None, describe_image, image)
+    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image)
+    bg_result, bg_ms = await loop.run_in_executor(None, remove_background, image)
 
     total_ms = round((time.time() - total_start) * 1000, 2)
 
