@@ -5,6 +5,11 @@ from app.utils.mlflow_logger import log_inference
 
 MODEL_NAME = "Salesforce/blip-image-captioning-base"
 
+def unload_model():
+    global processor, model
+    processor = None; model = None
+    import gc; gc.collect()
+
 def describe_image(image: Image.Image) -> tuple[DescriptionResponse, float]:
     t0 = time.time()
     w, h = image.size

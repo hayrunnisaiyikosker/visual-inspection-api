@@ -8,6 +8,12 @@ from app.utils.mlflow_logger import log_inference
 
 MODEL_NAME = "google/vit-base-patch16-224"
 
+def unload_model():
+    global processor, model
+    processor = None
+    model = None
+    import gc; gc.collect()
+
 def classify_image(image: Image.Image) -> tuple[ClassificationResponse, float]:
     print(f"[Classifier] Loading {MODEL_NAME}...")
     processor = ViTImageProcessor.from_pretrained(MODEL_NAME)

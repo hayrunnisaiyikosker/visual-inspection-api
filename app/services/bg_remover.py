@@ -7,6 +7,11 @@ from app.utils.mlflow_logger import log_inference
 
 MODEL_NAME = "briaai/RMBG-1.4"
 
+def unload_model():
+    global model
+    model = None
+    import gc; gc.collect()
+
 def remove_background(image: Image.Image) -> tuple[BackgroundRemovalResponse, float]:
     t0 = time.time()
     img = image.convert("RGBA")

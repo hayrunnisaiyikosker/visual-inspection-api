@@ -14,6 +14,11 @@ LABEL_MAP = {
     "phone": "cell phone", "book": "book", "shoe": "shoe",
 }
 
+def unload_model():
+    global processor, model
+    processor = None; model = None
+    import gc; gc.collect()
+
 def detect_objects(image: Image.Image, top_label: str = "") -> tuple[DetectionResponse, float]:
     t0 = time.time()
 
