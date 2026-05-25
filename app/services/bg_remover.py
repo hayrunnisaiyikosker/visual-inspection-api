@@ -9,14 +9,19 @@ MODEL_NAME = "briaai/RMBG-1.4"
 
 def remove_background(image: Image.Image) -> tuple[BackgroundRemovalResponse, float]:
     t0 = time.time()
-    try:
-        from rembg import remove
-        result = remove(image)
-    except Exception as e:
-        print(f"[BgRemover] rembg failed: {e}, returning original")
-        result = image.convert("RGBA")
+    img = image.convert("RGBA")
+    data = img.getdata()
+    new_data = []
+    for item in data:
+        r, g, b, a = item
+        # Açık renkli (beyaz/gri) arka planı şeffaf yap
+        if r > 200 and g > 200 and b > 200:
+            new_data.append((r, g, b, 0))
+        else:
+            new_data.append((r, g, b, a))
+    img.putdata(new_data)
     buffer = io.BytesIO()
-    result.save(buffer, format="PNG")
+    img.save(buffer, format="PNG")
     b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
     processing_ms = round((time.time() - t0) * 1000, 2)
     log_inference(endpoint="/analyze/remove-background", model_name=MODEL_NAME, processing_time_ms=processing_ms)
