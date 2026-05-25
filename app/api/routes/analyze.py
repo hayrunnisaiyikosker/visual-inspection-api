@@ -36,14 +36,22 @@ async def analyze(
     total_start = time.time()
 
     # Modeller SIRAYLA çalışır — aynı anda değil
+    from app.services.classifier import classify_image, unload_model as unload_classifier
+    from app.services.descriptor import describe_image, unload_model as unload_descriptor
+    from app.services.detector import detect_objects, unload_model as unload_detector
+    from app.services.bg_remover import remove_background, unload_model as unload_bg
+
     classification_result, classify_ms = await loop.run_in_executor(None, classify_image, image)
-    gc.collect()
+    await loop.run_in_executor(None, unload_classifier)
+
     description_result, describe_ms = await loop.run_in_executor(None, describe_image, image)
-    gc.collect()
-    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image, classification_result.top_prediction)
-    gc.collect()
+    await loop.run_in_executor(None, unload_descriptor)
+
+    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image)
+    await loop.run_in_executor(None, unload_detector)
+
     bg_result, bg_ms = await loop.run_in_executor(None, remove_background, image)
-    gc.collect()
+    await loop.run_in_executor(None, unload_bg)
 
     total_ms = round((time.time() - total_start) * 1000, 2)
     processing_time = ProcessingTime(
