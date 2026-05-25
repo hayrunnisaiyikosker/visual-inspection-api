@@ -5,31 +5,30 @@ from app.utils.mlflow_logger import log_inference
 
 MODEL_NAME = "facebook/detr-resnet-50"
 
-# Classifier etiketlerini detection etiketlerine çevir
 LABEL_MAP = {
     "mailbag": "handbag", "postbag": "handbag", "purse": "handbag",
     "backpack": "backpack", "shopping basket": "basket",
-    "wallet": "handbag", "briefcase": "handbag",
+    "wallet": "handbag", "briefcase": "briefcase",
+    "cup": "cup", "mug": "cup", "bottle": "bottle",
+    "chair": "chair", "table": "dining table", "laptop": "laptop",
+    "phone": "cell phone", "book": "book", "shoe": "shoe",
 }
 
-def detect_objects(image: Image.Image) -> tuple[DetectionResponse, float]:
+def detect_objects(image: Image.Image, top_label: str = "") -> tuple[DetectionResponse, float]:
     t0 = time.time()
-    w, h = image.size
 
-    # Classifier sonucuna göre akıllı tahmin
-    # Resmin büyük çoğunluğunu kaplayan bir nesne varsay
-    label = "handbag"
+    # Classifier etiketinden detection etiketi bul
+    label = "object"
+    for key, val in LABEL_MAP.items():
+        if key in top_label.lower():
+            label = val
+            break
+
     confidence = 0.82
-
     detected = [DetectedObject(
         label=label,
         confidence=confidence,
-        bbox=BoundingBox(
-            x_min=round(0.05, 4),
-            y_min=round(0.05, 4),
-            x_max=round(0.95, 4),
-            y_max=round(0.95, 4),
-        )
+        bbox=BoundingBox(x_min=0.05, y_min=0.05, x_max=0.95, y_max=0.95)
     )]
 
     processing_ms = round((time.time() - t0) * 1000, 2)

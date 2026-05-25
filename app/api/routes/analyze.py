@@ -40,7 +40,7 @@ async def analyze(
     gc.collect()
     description_result, describe_ms = await loop.run_in_executor(None, describe_image, image)
     gc.collect()
-    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image)
+    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image, classification_result.top_prediction)
     gc.collect()
     bg_result, bg_ms = await loop.run_in_executor(None, remove_background, image)
     gc.collect()
