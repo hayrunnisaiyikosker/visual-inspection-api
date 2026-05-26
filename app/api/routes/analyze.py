@@ -37,7 +37,7 @@ async def analyze(
 
     # Modeller SIRAYLA çalışır — aynı anda değil
     from app.services.classifier import classify_image, unload_model as unload_classifier
-    from app.services.descriptor import describe_image, unload_model as unload_descriptor
+    from app.services.descriptor import describe_image
     from app.services.detector import detect_objects, unload_model as unload_detector
     from app.services.bg_remover import remove_background, unload_model as unload_bg
 
