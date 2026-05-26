@@ -44,7 +44,7 @@ async def analyze(
     classification_result, classify_ms = await loop.run_in_executor(None, classify_image, image)
     await loop.run_in_executor(None, unload_classifier)
 
-    description_result, describe_ms = await loop.run_in_executor(None, describe_image, image)
+    description_result, describe_ms = await loop.run_in_executor(None, describe_image, image, classification_result.top_prediction)
     await loop.run_in_executor(None, unload_descriptor)
 
     detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image)
