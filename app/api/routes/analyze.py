@@ -35,23 +35,17 @@ async def analyze(
     loop = asyncio.get_event_loop()
     total_start = time.time()
 
-    # Modeller SIRAYLA çalışır — aynı anda değil
-    from app.services.classifier import classify_image, unload_model as unload_classifier
-    from app.services.descriptor import describe_image
-    from app.services.detector import detect_objects, unload_model as unload_detector
-    from app.services.bg_remover import remove_background, unload_model as unload_bg
-
     classification_result, classify_ms = await loop.run_in_executor(None, classify_image, image)
-    await loop.run_in_executor(None, unload_classifier)
+    gc.collect()
 
     description_result, describe_ms = await loop.run_in_executor(None, describe_image, image, classification_result.top_prediction)
-    await loop.run_in_executor(None, unload_descriptor)
+    gc.collect()
 
-    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image)
-    await loop.run_in_executor(None, unload_detector)
+    detection_result, detect_ms = await loop.run_in_executor(None, detect_objects, image, classification_result.top_prediction)
+    gc.collect()
 
     bg_result, bg_ms = await loop.run_in_executor(None, remove_background, image)
-    await loop.run_in_executor(None, unload_bg)
+    gc.collect()
 
     total_ms = round((time.time() - total_start) * 1000, 2)
     processing_time = ProcessingTime(
